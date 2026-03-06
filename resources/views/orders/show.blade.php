@@ -42,6 +42,28 @@
                         </div>
                     @endif
 
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div class="p-4 bg-gray-50 rounded border border-gray-200">
+                            <h3 class="text-md font-bold mb-2">Shipping Details</h3>
+                            <div class="text-sm text-gray-700">
+                                <div><span class="font-semibold">Recipient:</span> {{ $order->shipping_name ?? '—' }}</div>
+                                @php
+                                    $parts = array_filter([
+                                        $order->shipping_building_number,
+                                        $order->shipping_street,
+                                        $order->shipping_barangay,
+                                        $order->shipping_city,
+                                        $order->shipping_province,
+                                        $order->shipping_postal_code,
+                                    ], fn($v) => filled($v));
+                                    $addr = implode(', ', $parts);
+                                @endphp
+                                <div class="mt-1"><span class="font-semibold">Address:</span> {{ $addr ?: ($order->shipping_address ?? '—') }}</div>
+                            </div>
+                        </div>
+                        <div></div>
+                    </div>
+
                     <h3 class="text-lg font-bold mb-4">Items</h3>
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 mb-6">

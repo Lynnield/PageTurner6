@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\ReviewSubmitted;
 use App\Models\Book;
 use App\Models\Review;
 use Illuminate\Http\Request;
@@ -21,12 +22,12 @@ class ReviewController extends Controller
 
         $user = Auth::user();
 
-        // Check if user has purchased the book
+        // Check if user has purchased the book and order is completed
         $hasPurchased = $user->orders()
             ->whereHas('items', function ($query) use ($book) {
                 $query->where('book_id', $book->id);
             })
-            ->where('status', '!=', 'cancelled') // Optional: only allow if order is not cancelled?
+            ->where('status', 'completed')
             ->exists();
 
         if (! $hasPurchased) {
@@ -41,6 +42,11 @@ class ReviewController extends Controller
                 'comment' => $validated['comment'],
             ]
         );
+
+        $review = Review::where('user_id', $user->id)->where('book_id', $book->id)->first();
+        if ($review) {
+            event(new ReviewSubmitted($review));
+        }
 
         return back()->with('success', 'Review submitted successfully.');
     }

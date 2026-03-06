@@ -11,10 +11,12 @@ class CategoryController extends Controller
     {
         if (request()->routeIs('admin.*')) {
             $categories = Category::paginate(10);
+
             return view('admin.categories.index', compact('categories'));
         }
 
         $categories = Category::all();
+
         return view('categories.index', compact('categories'));
     }
 
@@ -37,8 +39,8 @@ class CategoryController extends Controller
 
     public function show(Category $category)
     {
-        // Public view: show books in category
-        $books = $category->books()->paginate(12);
+        $books = $category->books()->latest()->take(2)->get();
+
         return view('categories.show', compact('category', 'books'));
     }
 
@@ -50,7 +52,7 @@ class CategoryController extends Controller
     public function update(Request $request, Category $category)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:categories,name,' . $category->id,
+            'name' => 'required|string|max:255|unique:categories,name,'.$category->id,
             'description' => 'nullable|string',
         ]);
 
@@ -62,6 +64,7 @@ class CategoryController extends Controller
     public function destroy(Category $category)
     {
         $category->delete();
+
         return redirect()->route('admin.categories.index')->with('success', 'Category deleted successfully.');
     }
 }

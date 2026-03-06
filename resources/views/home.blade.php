@@ -13,8 +13,8 @@
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     @foreach($categories as $category)
                         <a href="{{ route('categories.show', $category) }}" class="bg-white p-6 rounded-lg shadow hover:shadow-md transition text-center group">
-                            <span class="text-lg font-semibold text-indigo-600 group-hover:text-indigo-800">{{ $category->name }}</span>
-                            <p class="text-xs text-gray-500 mt-1">{{ Str::limit($category->description, 50) }}</p>
+                            <span class="text-lg font-semibold text-indigo-600 group-hover:text-indigo-800">{{ $category->name_en ?? $category->name }}</span>
+                            <p class="text-xs text-gray-500 mt-1">{{ Str::limit($category->description_en ?? $category->description, 50) }}</p>
                         </a>
                     @endforeach
                 </div>
@@ -23,7 +23,7 @@
             <!-- Featured Books Section -->
             <div>
                 <h3 class="text-2xl font-bold mb-4">Featured Books</h3>
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                     @foreach($featuredBooks as $book)
                         <x-book-card :book="$book" />
                     @endforeach

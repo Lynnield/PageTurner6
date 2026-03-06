@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\TwoFactorSecret;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -27,6 +28,14 @@ class AuthenticatedSessionController extends Controller
         $request->authenticate();
 
         $request->session()->regenerate();
+
+        $user = $request->user();
+        $enabled = TwoFactorSecret::where('user_id', $user->id)->whereNotNull('enabled_at')->exists();
+        if ($enabled) {
+            $request->session()->forget('2fa_passed');
+
+            return redirect()->route('two-factor.challenge');
+        }
 
         return redirect()->intended(route('dashboard', absolute: false));
     }

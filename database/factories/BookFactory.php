@@ -19,11 +19,14 @@ class BookFactory extends Factory
         return [
             'category_id' => \App\Models\Category::factory(),
             'title' => fake()->sentence(3),
-            'author' => fake()->name(),
+            'author' => collect(range(1, fake()->numberBetween(1, 2)))->map(fn () => fake()->name())->implode(', '),
+            'publisher' => fake()->company(),
+            'publication_year' => fake()->numberBetween(1950, (int) date('Y')),
+            'page_count' => fake()->numberBetween(80, 900),
             'isbn' => fake()->unique()->isbn13(),
-            'price' => fake()->randomFloat(2, 10, 100),
+            'price' => fake()->randomFloat(2, 5, 50),
             'stock_quantity' => fake()->numberBetween(0, 100),
-            'description' => fake()->paragraph(),
+            'description' => fake()->sentence(),
             'cover_image' => null,
         ];
     }

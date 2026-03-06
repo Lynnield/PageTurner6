@@ -22,7 +22,18 @@
                         {{ __('Categories') }}
                     </x-nav-link>
 
+                    <x-nav-link :href="route('dashboard.public')" :active="request()->routeIs('dashboard.public')">
+                        {{ __('Public Dashboard') }}
+                    </x-nav-link>
+
                     @auth
+                        <x-nav-link :href="route('cart.index')" :active="request()->routeIs('cart.*')">
+                            Cart
+                            @php $cartCount = array_sum(session('cart', [])); @endphp
+                            @if($cartCount)
+                                <span class="ml-1 inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800">{{ $cartCount }}</span>
+                            @endif
+                        </x-nav-link>
                         @if(Auth::user()->isAdmin())
                             <!-- Admin Links -->
                             <x-nav-link :href="route('admin.books.index')" :active="request()->routeIs('admin.books.*')">
@@ -97,8 +108,8 @@
     <!-- Responsive Navigation Menu -->
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                {{ __('Dashboard') }}
+            <x-responsive-nav-link :href="route('dashboard.public')" :active="request()->routeIs('dashboard.public')">
+                {{ __('Public Dashboard') }}
             </x-responsive-nav-link>
         </div>
 

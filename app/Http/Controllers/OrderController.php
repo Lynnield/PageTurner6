@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\OrderPlaced;
+use App\Events\OrderStatusChanged;
 use App\Models\Book;
 use App\Models\Order;
-use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -21,10 +22,12 @@ class OrderController extends Controller
 
         if ($user->isAdmin()) {
             $orders = Order::with(['user', 'items.book'])->latest()->paginate(10);
+
             return view('admin.orders.index', compact('orders'));
         }
 
         $orders = $user->orders()->with(['items.book'])->latest()->paginate(10);
+
         return view('orders.index', compact('orders'));
     }
 
@@ -37,6 +40,14 @@ class OrderController extends Controller
             'items' => 'required|array|min:1',
             'items.*.book_id' => 'required|exists:books,id',
             'items.*.quantity' => 'required|integer|min:1',
+            'shipping_name' => ['required', 'string', 'min:2'],
+            'shipping_province' => ['required', 'string'],
+            'shipping_city' => ['required', 'string'],
+            'shipping_barangay' => ['required', 'string'],
+            'shipping_postal_code' => ['required', 'string'],
+            'shipping_street' => ['required', 'string'],
+            'shipping_building_number' => ['required', 'string'],
+            'shipping_address' => ['nullable', 'string'],
         ]);
 
         try {
@@ -53,7 +64,7 @@ class OrderController extends Controller
                 }
 
                 $book->decrement('stock_quantity', $item['quantity']);
-                
+
                 $unitPrice = $book->price;
                 $subtotal = $unitPrice * $item['quantity'];
                 $totalAmount += $subtotal;
@@ -69,6 +80,14 @@ class OrderController extends Controller
                 'user_id' => Auth::id(),
                 'total_amount' => $totalAmount,
                 'status' => 'pending',
+                'shipping_name' => $request->shipping_name,
+                'shipping_address' => $request->shipping_address,
+                'shipping_province' => $request->shipping_province,
+                'shipping_city' => $request->shipping_city,
+                'shipping_barangay' => $request->shipping_barangay,
+                'shipping_postal_code' => $request->shipping_postal_code,
+                'shipping_street' => $request->shipping_street,
+                'shipping_building_number' => $request->shipping_building_number,
             ]);
 
             foreach ($orderItemsData as $data) {
@@ -77,11 +96,14 @@ class OrderController extends Controller
 
             DB::commit();
 
+            event(new OrderPlaced($order));
+
             return redirect()->route('orders.show', $order)->with('success', 'Order placed successfully!');
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Order failed: ' . $e->getMessage());
+
+            return back()->with('error', 'Order failed: '.$e->getMessage());
         }
     }
 
@@ -115,7 +137,9 @@ class OrderController extends Controller
             'status' => ['required', Rule::in(['pending', 'processing', 'completed', 'cancelled'])],
         ]);
 
+        $old = $order->status;
         $order->update(['status' => $validated['status']]);
+        event(new OrderStatusChanged($order, $old, $order->status));
 
         return back()->with('success', 'Order status updated successfully.');
     }

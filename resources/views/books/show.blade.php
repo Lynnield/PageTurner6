@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ $book->title }}
+                {{ $book->title_en ?? $book->title }}
             </h2>
             <a href="{{ route('books.index') }}" class="text-sm text-indigo-600 hover:underline">Back to Books</a>
         </div>
@@ -26,9 +26,9 @@
                     <!-- Details -->
                     <div class="flex-1">
                         <div class="text-sm text-indigo-600 font-bold uppercase tracking-wide mb-2">
-                            <a href="{{ route('categories.show', $book->category) }}">{{ $book->category->name }}</a>
+                            <a href="{{ route('categories.show', $book->category) }}">{{ $book->category->name_en ?? $book->category->name }}</a>
                         </div>
-                        <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ $book->title }}</h1>
+                        <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ $book->title_en ?? $book->title }}</h1>
                         <p class="text-xl text-gray-600 mb-4">by {{ $book->author }}</p>
                         
                         <div class="flex items-center mb-6">
@@ -42,30 +42,103 @@
                         </div>
 
                         <div class="prose max-w-none text-gray-700 mb-8">
-                            {{ $book->description }}
+                            {{ $book->description_en ?? $book->description }}
                         </div>
 
                         <div class="mb-4 text-sm text-gray-500">
                             ISBN: {{ $book->isbn }}
                         </div>
 
-                        <!-- Buy Form -->
+                        <!-- Buy Now Modal Trigger -->
                         @auth
-                            <form action="{{ route('orders.store') }}" method="POST" class="mb-8 p-4 bg-gray-50 rounded-lg border border-gray-100">
-                                @csrf
-                                <input type="hidden" name="items[0][book_id]" value="{{ $book->id }}">
+                            <div x-data="{ openBuy: false }" class="mb-4">
                                 <div class="flex items-end gap-4">
                                     <div class="w-24">
-                                        <label for="quantity" class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
-                                        <input type="number" name="items[0][quantity]" id="quantity" value="1" min="1" max="{{ $book->stock_quantity }}" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                                        <select x-model.number="qty" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" x-init="qty = 1" @if($book->stock_quantity === 0) disabled @endif>
+                                            @for($q=1; $q<=max(1, $book->stock_quantity); $q++)
+                                                <option value="{{ $q }}">{{ $q }}</option>
+                                            @endfor
+                                        </select>
                                     </div>
-                                    <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 transition font-bold shadow-md h-10" {{ $book->stock_quantity < 1 ? 'disabled' : '' }}>
+                                    <button type="button" @click="openBuy = true" class="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 transition font-bold shadow-md h-10" {{ $book->stock_quantity < 1 ? 'disabled' : '' }}>
                                         {{ $book->stock_quantity < 1 ? 'Out of Stock' : 'Buy Now' }}
                                     </button>
                                 </div>
                                 <p class="text-sm {{ $book->stock_quantity < 5 ? 'text-red-600' : 'text-green-600' }} mt-2 font-semibold">
                                     {{ $book->stock_quantity }} in stock
                                 </p>
+
+                                <!-- Modal -->
+                                <div x-show="openBuy" x-cloak class="fixed inset-0 z-50 flex items-center justify-center">
+                                    <div class="absolute inset-0 bg-black/40" @click="openBuy = false"></div>
+                                    <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl">
+                                        <div class="flex items-center justify-between p-4 border-b">
+                                            <h3 class="text-lg font-bold">Shipping Details</h3>
+                                            <button type="button" class="text-gray-500 hover:text-gray-700" @click="openBuy = false">✕</button>
+                                        </div>
+                                        <form action="{{ route('orders.store') }}" method="POST" class="p-6 space-y-4">
+                                            @csrf
+                                            <input type="hidden" name="items[0][book_id]" value="{{ $book->id }}">
+                                            <input type="hidden" name="items[0][quantity]" :value="qty">
+                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div class="md:col-span-2">
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">Recipient Name</label>
+                                                    <input type="text" name="shipping_name" required class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" placeholder="Full name" value="{{ old('shipping_name') }}">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">Province</label>
+                                                    <input type="text" name="shipping_province" value="{{ old('shipping_province') }}" required class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">City</label>
+                                                    <input type="text" name="shipping_city" value="{{ old('shipping_city') }}" required class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">Barangay</label>
+                                                    <input type="text" name="shipping_barangay" value="{{ old('shipping_barangay') }}" required class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">Postal Code</label>
+                                                    <input type="text" name="shipping_postal_code" value="{{ old('shipping_postal_code') }}" required class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300">
+                                                </div>
+                                                <div class="md:col-span-2">
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
+                                                    <input type="text" name="shipping_street" value="{{ old('shipping_street') }}" required class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300" placeholder="Street name / subdivision">
+                                                </div>
+                                                <div class="md:col-span-2">
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">Building/House Number</label>
+                                                    <input type="text" name="shipping_building_number" value="{{ old('shipping_building_number') }}" required class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300" placeholder="e.g., Unit 12B, 1234">
+                                                </div>
+                                                <div class="md:col-span-2">
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">Address Notes (optional)</label>
+                                                    <textarea name="shipping_address" rows="2" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300" placeholder="Landmarks or delivery instructions">{{ old('shipping_address') }}</textarea>
+                                                </div>
+                                            </div>
+                                            <div class="flex justify-end gap-3 mt-2 border-t pt-4">
+                                                <button type="button" @click="openBuy = false" class="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200 text-gray-800">Cancel</button>
+                                                <button type="submit" class="px-4 py-2 rounded bg-indigo-600 hover:bg-indigo-700 text-white">Place Order</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            <form action="{{ route('cart.add') }}" method="POST" class="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                                @csrf
+                                <input type="hidden" name="book_id" value="{{ $book->id }}">
+                                <div class="flex items-end gap-4">
+                                    <div class="w-24">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                                        <select name="quantity" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" @if($book->stock_quantity === 0) disabled @endif>
+                                            @for($q=1; $q<=max(1, min($book->stock_quantity, 20)); $q++)
+                                                <option value="{{ $q }}">{{ $q }}</option>
+                                            @endfor
+                                        </select>
+                                    </div>
+                                    <button type="submit" class="bg-gray-800 text-white px-6 py-2 rounded-md hover:bg-gray-900 transition font-bold shadow-md h-10" {{ $book->stock_quantity < 1 ? 'disabled' : '' }}>
+                                        Add to Cart
+                                    </button>
+                                </div>
                             </form>
                         @else
                             <div class="bg-indigo-50 p-4 rounded mb-8 border border-indigo-100">
@@ -86,7 +159,7 @@
                                 ->whereHas('items', function ($query) use ($book) {
                                     $query->where('book_id', $book->id);
                                 })
-                                ->where('status', '!=', 'cancelled')
+                                ->where('status', 'completed')
                                 ->exists();
                         @endphp
 

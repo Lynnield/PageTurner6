@@ -13,14 +13,15 @@ class BookController extends Controller
     {
         if ($request->routeIs('admin.*')) {
             $books = Book::with('category')->latest()->paginate(10);
+
             return view('admin.books.index', compact('books'));
         }
 
         $query = Book::with('category');
 
         if ($request->filled('search')) {
-            $query->where('title', 'like', '%' . $request->search . '%')
-                  ->orWhere('author', 'like', '%' . $request->search . '%');
+            $query->where('title', 'like', '%'.$request->search.'%')
+                ->orWhere('author', 'like', '%'.$request->search.'%');
         }
 
         if ($request->filled('category')) {
@@ -36,6 +37,7 @@ class BookController extends Controller
     public function create()
     {
         $categories = Category::all();
+
         return view('admin.books.create', compact('categories'));
     }
 
@@ -65,12 +67,14 @@ class BookController extends Controller
     public function show(Book $book)
     {
         $book->load(['reviews.user', 'category']);
+
         return view('books.show', compact('book'));
     }
 
     public function edit(Book $book)
     {
         $categories = Category::all();
+
         return view('admin.books.edit', compact('book', 'categories'));
     }
 
@@ -80,7 +84,7 @@ class BookController extends Controller
             'category_id' => 'required|exists:categories,id',
             'title' => 'required|string|max:255',
             'author' => 'required|string|max:255',
-            'isbn' => 'required|string|unique:books,isbn,' . $book->id,
+            'isbn' => 'required|string|unique:books,isbn,'.$book->id,
             'price' => 'required|numeric|min:0',
             'stock_quantity' => 'required|integer|min:0',
             'description' => 'nullable|string',
@@ -106,6 +110,7 @@ class BookController extends Controller
             Storage::disk('public')->delete($book->cover_image);
         }
         $book->delete();
+
         return redirect()->route('admin.books.index')->with('success', 'Book deleted successfully.');
     }
 }

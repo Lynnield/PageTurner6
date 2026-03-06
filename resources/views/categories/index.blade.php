@@ -12,10 +12,10 @@
                     <a href="{{ route('categories.show', $category) }}" class="block bg-white overflow-hidden shadow-sm sm:rounded-lg hover:shadow-md transition duration-300 group">
                         <div class="p-6">
                             <h3 class="text-xl font-bold text-gray-900 group-hover:text-indigo-600 mb-2">
-                                {{ $category->name }}
+                                {{ $category->name_en ?? $category->name }}
                             </h3>
                             <p class="text-gray-600 mb-4">
-                                {{ Str::limit($category->description, 100) }}
+                                {{ Str::limit($category->description_en ?? $category->description, 100) }}
                             </p>
                             <span class="text-sm text-indigo-500 font-semibold group-hover:underline">
                                 Browse {{ $category->books_count ?? '' }} Books &rarr;

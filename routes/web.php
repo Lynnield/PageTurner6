@@ -68,6 +68,15 @@ Route::middleware(['auth', 'verified', EnsureUserIsAdmin::class])->prefix('admin
     Route::resource('categories', CategoryController::class);
     Route::resource('books', BookController::class);
     Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.update-status');
+
+    // Import / Export (enterprise)
+    Route::get('/imports', [\App\Http\Controllers\Admin\ImportExportController::class, 'listImports'])->name('imports.index');
+    Route::get('/imports/{importLog}', [\App\Http\Controllers\Admin\ImportExportController::class, 'showImport'])->name('imports.show');
+    Route::post('/books/import', [\App\Http\Controllers\Admin\ImportExportController::class, 'importBooks'])->name('books.import');
+
+    Route::get('/exports', [\App\Http\Controllers\Admin\ImportExportController::class, 'listExports'])->name('exports.index');
+    Route::post('/books/export', [\App\Http\Controllers\Admin\ImportExportController::class, 'exportBooks'])->name('books.export');
+    Route::get('/exports/{exportLog}/download', [\App\Http\Controllers\Admin\ImportExportController::class, 'downloadExport'])->name('exports.download');
 });
 
 Route::middleware(['auth', 'verified'])->get('/customer/dashboard', [\App\Http\Controllers\CustomerDashboardController::class, 'index'])->name('customer.dashboard');

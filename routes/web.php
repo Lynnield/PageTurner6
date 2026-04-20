@@ -54,6 +54,7 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
         Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
         Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
         Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+        Route::get('/orders/{order}/invoice', [OrderController::class, 'exportInvoice'])->name('orders.invoice');
     });
 });
 
@@ -67,9 +68,18 @@ Route::middleware(['auth', 'verified', EnsureUserIsAdmin::class])->prefix('admin
     Route::get('/dashboard', [\App\Http\Controllers\AdminDashboardController::class, 'index'])->name('dashboard');
     Route::resource('categories', CategoryController::class);
     Route::resource('books', BookController::class);
+    Route::get('/orders', [\App\Http\Controllers\Admin\ImportExportController::class, 'exportOrders'])->name('orders.export');
     Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.update-status');
 
+    Route::post('/users/import', [\App\Http\Controllers\Admin\ImportExportController::class, 'importUsers'])->name('users.import');
+    Route::get('/users/export', [\App\Http\Controllers\Admin\ImportExportController::class, 'exportUsers'])->name('users.export');
+
+    // Audits
+    Route::get('/audits/export', [\App\Http\Controllers\Admin\AuditController::class, 'export'])->name('audits.export');
+    Route::resource('audits', \App\Http\Controllers\Admin\AuditController::class)->only(['index', 'show']);
+
     // Import / Export (enterprise)
+    Route::get('/imports/books/template', [\App\Http\Controllers\Admin\ImportExportController::class, 'downloadBookTemplate'])->name('books.import.template');
     Route::get('/imports', [\App\Http\Controllers\Admin\ImportExportController::class, 'listImports'])->name('imports.index');
     Route::get('/imports/{importLog}', [\App\Http\Controllers\Admin\ImportExportController::class, 'showImport'])->name('imports.show');
     Route::post('/books/import', [\App\Http\Controllers\Admin\ImportExportController::class, 'importBooks'])->name('books.import');
@@ -77,7 +87,17 @@ Route::middleware(['auth', 'verified', EnsureUserIsAdmin::class])->prefix('admin
     Route::get('/exports', [\App\Http\Controllers\Admin\ImportExportController::class, 'listExports'])->name('exports.index');
     Route::post('/books/export', [\App\Http\Controllers\Admin\ImportExportController::class, 'exportBooks'])->name('books.export');
     Route::get('/exports/{exportLog}/download', [\App\Http\Controllers\Admin\ImportExportController::class, 'downloadExport'])->name('exports.download');
+    
+    Route::post('/backup/run', function () {
+        \Illuminate\Support\Facades\Artisan::call('backup:run');
+        return redirect()->back()->with('status', 'Backup completed successfully.');
+    })->name('backup.run');
 });
 
-Route::middleware(['auth', 'verified'])->get('/customer/dashboard', [\App\Http\Controllers\CustomerDashboardController::class, 'index'])->name('customer.dashboard');
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/customer/dashboard', [\App\Http\Controllers\CustomerDashboardController::class, 'index'])->name('customer.dashboard');
+    Route::get('/customer/export/data', [\App\Http\Controllers\CustomerDashboardController::class, 'exportData'])->name('customer.export.data');
+    Route::get('/customer/export/orders', [\App\Http\Controllers\CustomerDashboardController::class, 'exportOrders'])->name('customer.export.orders');
+    Route::get('/customer/export/reading-history', [\App\Http\Controllers\CustomerDashboardController::class, 'exportReadingHistory'])->name('customer.export.history');
+});
 require __DIR__.'/auth.php';

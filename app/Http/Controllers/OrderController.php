@@ -123,6 +123,21 @@ class OrderController extends Controller
         return view('orders.show', compact('order'));
     }
 
+    public function exportInvoice(Order $order)
+    {
+        $user = Auth::user();
+
+        if ($order->user_id !== $user->id && ! $user->isAdmin()) {
+            abort(403);
+        }
+
+        $order->load(['items.book', 'user']);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('orders.invoice', compact('order'));
+
+        return $pdf->download("invoice_{$order->id}.pdf");
+    }
+
     /**
      * Update the status of the order (Admin only).
      */

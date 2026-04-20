@@ -46,8 +46,18 @@ return [
         'mysql' => [
             'driver' => 'mysql',
             'url' => env('DB_URL'),
-            'host' => env('DB_HOST', '127.0.0.1'),
-            'port' => env('DB_PORT', '3306'),
+            'read' => [
+                'host' => [
+                    env('DB_READ_HOST_1', '127.0.0.1'),
+                    env('DB_READ_HOST_2', '127.0.0.1'),
+                ],
+            ],
+            'write' => [
+                'host' => [
+                    env('DB_WRITE_HOST', '127.0.0.1'),
+                ],
+            ],
+            'sticky' => env('DB_STICKY', true),
             'database' => env('DB_DATABASE', 'laravel'),
             'username' => env('DB_USERNAME', 'root'),
             'password' => env('DB_PASSWORD', ''),
@@ -58,8 +68,15 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
+            'pool' => [
+                'min_connections' => env('DB_POOL_MIN', 10),
+                'max_connections' => env('DB_POOL_MAX', 100),
+                'idle_timeout' => env('DB_POOL_TIMEOUT', 60),
+            ],
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 (PHP_VERSION_ID >= 80500 ? \Pdo\Mysql::ATTR_SSL_CA : \PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
+                \PDO::ATTR_EMULATE_PREPARES => true,
+                \PDO::ATTR_TIMEOUT => env('DB_TIMEOUT', 5),
             ]) : [],
         ],
 

@@ -18,6 +18,7 @@ use Maatwebsite\Excel\Concerns\SkipsOnFailure;
 use Maatwebsite\Excel\Concerns\SkipsOnError;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
+use Maatwebsite\Excel\Concerns\WithBatchInserts;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
@@ -27,7 +28,7 @@ use Maatwebsite\Excel\Events\ImportFailed;
 use Maatwebsite\Excel\Validators\Failure;
 use Throwable;
 
-class BookImport implements ToCollection, WithHeadingRow, WithValidation, WithChunkReading, ShouldQueue, WithEvents, SkipsOnFailure, SkipsOnError, SkipsEmptyRows
+class BookImport implements ToCollection, WithHeadingRow, WithValidation, WithChunkReading, ShouldQueue, WithEvents, SkipsOnFailure, SkipsOnError, SkipsEmptyRows, WithBatchInserts
 {
     /**
      * Enterprise note:
@@ -40,6 +41,11 @@ class BookImport implements ToCollection, WithHeadingRow, WithValidation, WithCh
     ) {}
 
     public function chunkSize(): int
+    {
+        return 1000;
+    }
+
+    public function batchSize(): int
     {
         return 1000;
     }

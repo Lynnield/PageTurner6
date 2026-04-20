@@ -51,11 +51,34 @@
                 </div>
             </div>
 
-            <div class="flex gap-4">
+            <div class="flex gap-4 flex-wrap">
                 <a href="{{ route('books.index') }}" class="px-4 py-2 bg-indigo-600 text-white rounded">{{ __('Browse Books') }}</a>
                 <a href="{{ route('orders.index') }}" class="px-4 py-2 bg-gray-200 rounded">{{ __('Order History') }}</a>
                 <a href="{{ route('profile.edit') }}" class="px-4 py-2 bg-gray-200 rounded">{{ __('Profile Settings') }}</a>
                 <a href="{{ route('two-factor.settings') }}" class="px-4 py-2 bg-gray-200 rounded">{{ __('Security Settings') }}</a>
+            </div>
+
+            <!-- Data Portability Section -->
+            <div class="bg-white p-6 rounded shadow mt-8 border-t-4 border-indigo-500">
+                <h3 class="text-lg font-bold mb-2 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    {{ __('Data Portability & GDPR') }}
+                </h3>
+                <p class="text-sm text-gray-600 mb-4">{{ __('Download your personal data and account history in structured formats.') }}</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <a href="{{ route('customer.export.data') }}" class="flex flex-col items-center justify-center p-4 border rounded hover:bg-gray-50 transition">
+                        <span class="font-semibold text-gray-800">{{ __('Export My Data') }}</span>
+                        <span class="text-xs text-gray-500 mt-1">{{ __('Full profile, reviews, and activity (JSON)') }}</span>
+                    </a>
+                    <a href="{{ route('customer.export.orders') }}" class="flex flex-col items-center justify-center p-4 border rounded hover:bg-gray-50 transition">
+                        <span class="font-semibold text-gray-800">{{ __('Export Order History') }}</span>
+                        <span class="text-xs text-gray-500 mt-1">{{ __('Detailed list of all purchases (Excel)') }}</span>
+                    </a>
+                    <a href="{{ route('customer.export.history') }}" class="flex flex-col items-center justify-center p-4 border rounded hover:bg-gray-50 transition">
+                        <span class="font-semibold text-gray-800">{{ __('Export Reading History') }}</span>
+                        <span class="text-xs text-gray-500 mt-1">{{ __('Books purchased and reviewed (CSV)') }}</span>
+                    </a>
+                </div>
             </div>
         </div>
     </div>

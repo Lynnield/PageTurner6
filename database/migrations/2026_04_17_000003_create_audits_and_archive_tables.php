@@ -33,7 +33,6 @@ return new class extends Migration {
 
             $table->timestamps();
 
-            $table->index(['auditable_type', 'auditable_id']);
             $table->index(['user_id', 'user_type']);
             $table->index(['event', 'created_at']);
             $table->index(['request_uuid']);
@@ -60,7 +59,6 @@ return new class extends Migration {
             $table->timestamps();
 
             $table->index(['event', 'created_at']);
-            $table->index(['auditable_type', 'auditable_id']);
         });
     }
 

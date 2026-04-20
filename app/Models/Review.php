@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use OwenIt\Auditing\Contracts\Auditable;
 
-class Review extends Model
+class Review extends Model implements Auditable
 {
     /** @use HasFactory<\Database\Factories\ReviewFactory> */
-    use HasFactory;
+    use HasFactory, \OwenIt\Auditing\Auditable;
 
     protected $fillable = ['user_id', 'book_id', 'rating', 'comment'];
 

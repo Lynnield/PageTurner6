@@ -32,6 +32,28 @@ class ImportExportController extends Controller
             ->with('status', "Import queued (log #{$log->id}).");
     }
 
+    public function downloadBookTemplate()
+    {
+        $headers = [
+            'Content-type'        => 'text/csv',
+            'Content-Disposition' => 'attachment; filename=books_import_template.csv',
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0'
+        ];
+
+        $columns = ['isbn', 'title', 'author', 'price', 'stock', 'category', 'description'];
+
+        $callback = function () use ($columns) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns);
+            fputcsv($file, ['9780743273565', 'The Great Gatsby', 'F. Scott Fitzgerald', '15.99', '100', 'Fiction', 'A classic novel.']);
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
     public function listImports(Request $request)
     {
         $imports = ImportLog::query()
@@ -70,6 +92,39 @@ class ImportExportController extends Controller
         return redirect()
             ->back()
             ->with('status', "Export queued (log #{$log->id}).");
+    }
+
+    public function exportOrders(Request $request)
+    {
+        $filters = $request->only(['status', 'date_from', 'date_to', 'user_id']);
+        $type = $request->input('type', 'admin'); // admin|financial
+        
+        $export = new \App\Exports\OrderExport($filters, $type);
+        
+        $filename = "orders_export_" . now()->format('Y_m_d_His') . ".xlsx";
+        
+        return \Maatwebsite\Excel\Facades\Excel::download($export, $filename);
+    }
+
+    public function importUsers(Request $request)
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:csv,txt,xlsx']
+        ]);
+
+        \Maatwebsite\Excel\Facades\Excel::import(new \App\Imports\UserImport, $request->file('file'));
+
+        return redirect()->back()->with('status', 'Users imported successfully.');
+    }
+
+    public function exportUsers(Request $request)
+    {
+        $redactPii = $request->boolean('redact_pii', true);
+        $export = new \App\Exports\UserExport($redactPii);
+        
+        $filename = "users_export_" . now()->format('Y_m_d_His') . ".xlsx";
+        
+        return \Maatwebsite\Excel\Facades\Excel::download($export, $filename);
     }
 
     public function listExports(Request $request)

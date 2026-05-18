@@ -45,6 +45,49 @@
                             <x-nav-link :href="route('orders.index')" :active="request()->routeIs('orders.*')">
                                 {{ __('Manage Orders') }}
                             </x-nav-link>
+
+                            <!-- Data Management Dropdown -->
+                            <div class="hidden sm:flex sm:items-center">
+                                <x-dropdown align="right" width="48">
+                                    <x-slot name="trigger">
+                                        <button class="inline-flex items-center px-3 py-6 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none focus:text-gray-700 focus:border-gray-300 transition duration-150 ease-in-out">
+                                            <div>{{ __('Data Tools') }}</div>
+                                            <div class="ms-1">
+                                                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                                </svg>
+                                            </div>
+                                        </button>
+                                    </x-slot>
+
+                                    <x-slot name="content">
+                                        <div class="px-4 py-2 text-xs text-gray-400">
+                                            {{ __('Import Tools') }}
+                                        </div>
+                                        <x-dropdown-link href="#" onclick="document.getElementById('import-modal').classList.remove('hidden')">
+                                            {{ __('Import Books') }}
+                                        </x-dropdown-link>
+                                        <x-dropdown-link :href="route('admin.books.import.template')">
+                                            {{ __('Download Template') }}
+                                        </x-dropdown-link>
+                                        
+                                        <div class="border-t border-gray-100"></div>
+                                        
+                                        <div class="px-4 py-2 text-xs text-gray-400">
+                                            {{ __('Export Tools') }}
+                                        </div>
+                                        <x-dropdown-link href="#" onclick="document.getElementById('export-modal').classList.remove('hidden')">
+                                            {{ __('Export Books') }}
+                                        </x-dropdown-link>
+                                        <x-dropdown-link :href="route('admin.users.export')">
+                                            {{ __('Export Users') }}
+                                        </x-dropdown-link>
+                                        <x-dropdown-link :href="route('admin.audits.export')">
+                                            {{ __('Export Audits') }}
+                                        </x-dropdown-link>
+                                    </x-slot>
+                                </x-dropdown>
+                            </div>
                         @else
                             <x-nav-link :href="route('orders.index')" :active="request()->routeIs('orders.*')">
                                 {{ __('My Orders') }}
@@ -55,8 +98,10 @@
             </div>
 
             <!-- Settings Dropdown -->
-            <div class="hidden sm:flex sm:items-center sm:ms-6">
+            <div class="hidden sm:flex sm:items-center sm:ms-6 gap-4">
                 @auth
+                    <x-notification-bell />
+                    
                     <x-dropdown align="right" width="48">
                         <x-slot name="trigger">
                             <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
@@ -116,9 +161,18 @@
         <!-- Responsive Settings Options -->
         <div class="pt-4 pb-1 border-t border-gray-200">
             @auth
-                <div class="px-4">
-                    <div class="font-medium text-base text-gray-800">{{ Auth::user()->name }}</div>
-                    <div class="font-medium text-sm text-gray-500">{{ Auth::user()->email }}</div>
+                <div class="px-4 flex items-center justify-between">
+                    <div>
+                        <div class="font-medium text-base text-gray-800">{{ Auth::user()->name }}</div>
+                        <div class="font-medium text-sm text-gray-500">{{ Auth::user()->email }}</div>
+                    </div>
+                    <div class="ml-auto">
+                        <a href="{{ route('notifications.index') }}" class="relative p-2 text-gray-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                        </a>
+                    </div>
                 </div>
 
                 <div class="mt-3 space-y-1">

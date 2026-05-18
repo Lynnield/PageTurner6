@@ -9,8 +9,8 @@ class HomeController extends Controller
 {
     public function index()
     {
-        $featuredBooks = Book::latest()->take(6)->get();
-        $categories = Category::all();
+        $featuredBooks = Book::with(['category', 'reviews'])->latest()->take(6)->get();
+        $categories = Category::select(['id', 'name'])->get();
 
         return view('home', compact('featuredBooks', 'categories'));
     }

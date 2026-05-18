@@ -15,7 +15,18 @@ class ReviewSubmittedNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'database'];
+    }
+
+    public function toArray(object $notifiable): array
+    {
+        return [
+            'message' => 'Review submitted successfully! (Book: ' . $this->review->book->title . ')',
+            'review_id' => $this->review->id,
+            'book_title' => $this->review->book->title,
+            'rating' => $this->review->rating,
+            'type' => 'review_submitted'
+        ];
     }
 
     public function toMail(object $notifiable): MailMessage

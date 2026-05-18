@@ -12,7 +12,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
-use Maatwebsite\Excel\Concerns\ShouldQueue;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use Maatwebsite\Excel\Concerns\SkipsOnFailure;
 use Maatwebsite\Excel\Concerns\SkipsOnError;
@@ -36,7 +36,7 @@ class BookImport implements ToCollection, WithHeadingRow, WithValidation, WithCh
      * - Processing uses chunked upserts/inserts to stay within <256MB memory.
      */
     public function __construct(
-        private readonly int $importLogId,
+        private int $importLogId,
         private readonly string $mode // skip|update
     ) {}
 
@@ -56,21 +56,12 @@ class BookImport implements ToCollection, WithHeadingRow, WithValidation, WithCh
             'isbn' => [
                 'required',
                 new IsbnRule(),
-                function (string $attribute, mixed $value, \Closure $fail) {
-                    $isbn = preg_replace('/[^0-9Xx]/', '', (string) $value) ?? '';
-                    if ($isbn === '') {
-                        return;
-                    }
-                    if ($this->mode === 'skip' && Book::where('isbn', $isbn)->exists()) {
-                        $fail('Duplicate ISBN.');
-                    }
-                },
             ],
             'title' => ['required', 'string', 'max:255'],
             'author' => ['required', 'string', 'max:255'],
             'price' => ['required', 'numeric', 'gt:0', 'lte:9999.99'],
             'stock' => ['required', 'integer', 'min:0'],
-            'category' => ['required', 'string', Rule::exists('categories', 'name')],
+            'category' => ['required', 'string'],
             'description' => ['nullable', 'string'],
         ];
     }
@@ -94,7 +85,8 @@ class BookImport implements ToCollection, WithHeadingRow, WithValidation, WithCh
 
         // Cache categories for this chunk.
         $categoryNames = $rows->pluck('category')
-            ->filter(fn ($v) => is_string($v) && $v !== '')
+            ->filter(fn ($v) => is_string($v) && trim($v) !== '')
+            ->map(fn ($v) => trim($v))
             ->unique()
             ->values();
 
@@ -109,7 +101,7 @@ class BookImport implements ToCollection, WithHeadingRow, WithValidation, WithCh
                 continue;
             }
 
-            $categoryName = (string) ($row['category'] ?? '');
+            $categoryName = trim((string) ($row['category'] ?? ''));
             $categoryId = $categoryMap[$categoryName] ?? null;
 
             if (! $categoryId) {
@@ -237,13 +229,19 @@ class BookImport implements ToCollection, WithHeadingRow, WithValidation, WithCh
                     'status' => $status,
                     'finished_at' => now(),
                 ]);
+
+                \App\Events\ImportCompleted::dispatch($log);
             },
             ImportFailed::class => function (ImportFailed $event) {
-                ImportLog::whereKey($this->importLogId)->update([
-                    'status' => 'failed',
-                    'finished_at' => now(),
-                    'error_message' => (string) $event->getException()->getMessage(),
-                ]);
+                $log = ImportLog::find($this->importLogId);
+                if ($log) {
+                    $log->update([
+                        'status' => 'failed',
+                        'finished_at' => now(),
+                        'error_message' => (string) $event->getException()->getMessage(),
+                    ]);
+                    \App\Events\ImportCompleted::dispatch($log);
+                }
             },
         ];
     }

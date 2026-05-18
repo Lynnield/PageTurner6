@@ -68,6 +68,11 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
+            'dump' => [
+               'dump_binary_path' => env('DB_DUMP_BINARY_PATH', 'C:\xampp\mysql\bin'),
+               'use_single_transaction' => true,
+               'timeout' => 60 * 5, // 5 minute timeout
+            ],
             'pool' => [
                 'min_connections' => env('DB_POOL_MIN', 10),
                 'max_connections' => env('DB_POOL_MAX', 100),

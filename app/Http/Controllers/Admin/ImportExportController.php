@@ -23,9 +23,15 @@ class ImportExportController extends Controller
     {
         $log = $this->importService->queueBookImport(
             $request->file('file'),
-            $request->string('mode')->toString(),
+            $request->get('mode', 'skip'),
             $request->user()
         );
+
+        $request->user()->notify(new \App\Notifications\ImportExportNotification(
+            "Book import has been queued (ID: #{$log->id})",
+            $log,
+            'import'
+        ));
 
         return redirect()
             ->back()
@@ -82,6 +88,14 @@ class ImportExportController extends Controller
 
         $result = $this->exportService->exportBooks($filters, $columns, $request->string('format')->toString(), $request->user());
 
+        if (isset($result['log'])) {
+            $request->user()->notify(new \App\Notifications\ImportExportNotification(
+                "Book export has started (ID: #{$result['log']->id})",
+                $result['log'],
+                'export'
+            ));
+        }
+
         if (($result['mode'] ?? null) === 'download') {
             return $result['response'];
         }
@@ -112,9 +126,20 @@ class ImportExportController extends Controller
             'file' => ['required', 'file', 'mimes:csv,txt,xlsx']
         ]);
 
-        \Maatwebsite\Excel\Facades\Excel::import(new \App\Imports\UserImport, $request->file('file'));
+        $log = $this->importService->queueUserImport(
+            $request->file('file'),
+            $request->user()
+        );
 
-        return redirect()->back()->with('status', 'Users imported successfully.');
+        $request->user()->notify(new \App\Notifications\ImportExportNotification(
+            "User import has been queued (ID: #{$log->id})",
+            $log,
+            'import'
+        ));
+
+        return redirect()
+            ->back()
+            ->with('status', "User import queued (log #{$log->id}).");
     }
 
     public function exportUsers(Request $request)

@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Book;
+use App\Notifications\SimpleNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Auth;
 
 class CartController extends Controller
 {
@@ -12,7 +14,7 @@ class CartController extends Controller
     {
         $cart = $request->session()->get('cart', []);
         $bookIds = array_keys($cart);
-        $books = Book::whereIn('id', $bookIds)->get()->keyBy('id');
+        $books = Book::with('category')->whereIn('id', $bookIds)->get()->keyBy('id');
 
         $normalized = [];
         $adjusted = false;
@@ -67,10 +69,18 @@ class CartController extends Controller
         $request->session()->put('cart', $cart);
 
         if ($final < $desired) {
-            return back()->with('warning', "Only {$stock} copies available for \"{$book->title}\". Quantity adjusted.");
+            $msg = "Only {$stock} copies available for \"{$book->title}\". Quantity adjusted.";
+            if (Auth::check()) {
+                Auth::user()->notify(new SimpleNotification($msg, 'cart_update'));
+            }
+            return back()->with('warning', $msg);
         }
 
-        return back()->with('success', 'Added to cart.');
+        $msg = "Added \"{$book->title}\" to cart.";
+        if (Auth::check()) {
+            Auth::user()->notify(new SimpleNotification($msg, 'cart_add'));
+        }
+        return back()->with('success', $msg);
     }
 
     public function update(Request $request)
@@ -83,7 +93,7 @@ class CartController extends Controller
 
         $cart = [];
         $bookIds = Arr::pluck($items, 'book_id');
-        $books = Book::whereIn('id', $bookIds)->get()->keyBy('id');
+        $books = Book::with('category')->whereIn('id', $bookIds)->get()->keyBy('id');
         $adjusted = false;
 
         foreach ($items as $item) {

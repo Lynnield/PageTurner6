@@ -89,8 +89,15 @@ Route::middleware(['auth', 'verified', EnsureUserIsAdmin::class])->prefix('admin
     Route::get('/exports/{exportLog}/download', [\App\Http\Controllers\Admin\ImportExportController::class, 'downloadExport'])->name('exports.download');
     
     Route::post('/backup/run', function () {
-        \Illuminate\Support\Facades\Artisan::call('backup:run');
-        return redirect()->back()->with('status', 'Backup completed successfully.');
+        try {
+            $success = \App\Services\BackupService::runBackup();
+            if ($success) {
+                return redirect()->back()->with('status', 'Backup completed successfully.');
+            }
+            return redirect()->back()->with('error', 'Backup failed. Check logs for details.');
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', 'Backup failed: ' . $e->getMessage());
+        }
     })->name('backup.run');
 });
 
@@ -99,5 +106,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/customer/export/data', [\App\Http\Controllers\CustomerDashboardController::class, 'exportData'])->name('customer.export.data');
     Route::get('/customer/export/orders', [\App\Http\Controllers\CustomerDashboardController::class, 'exportOrders'])->name('customer.export.orders');
     Route::get('/customer/export/reading-history', [\App\Http\Controllers\CustomerDashboardController::class, 'exportReadingHistory'])->name('customer.export.history');
+
+    // Notifications
+    Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/api/notifications/latest', [\App\Http\Controllers\NotificationController::class, 'latest'])->name('notifications.latest');
+    Route::get('/api/notifications/unread-count', [\App\Http\Controllers\NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
+    Route::post('/api/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
+    Route::post('/api/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
+    Route::delete('/api/notifications/{id}', [\App\Http\Controllers\NotificationController::class, 'destroy'])->name('notifications.destroy');
+    Route::delete('/api/notifications', [\App\Http\Controllers\NotificationController::class, 'destroyAll'])->name('notifications.destroy-all');
 });
+
 require __DIR__.'/auth.php';

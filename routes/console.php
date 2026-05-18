@@ -155,20 +155,28 @@ $scheduleTask = function ($command, $frequency, $time = null) {
         $event->$frequency();
     }
     
-    $event->withoutOverlapping()
+    $event->withoutOverlapping(1440)  // Prevent overlapping for 24 hours
         ->onSuccess(function () use ($command) {
             Log::info("Scheduled task succeeded: {$command}");
+            // Dispatch job to log task execution
+            dispatch(new \App\Jobs\LogScheduledTaskExecution($command, 'completed'));
         })
         ->onFailure(function () use ($command) {
             Log::error("Scheduled task failed: {$command}");
+            dispatch(new \App\Jobs\LogScheduledTaskExecution($command, 'failed'));
         });
 };
 
+// Core Maintenance Tasks
 $scheduleTask('backup:run', 'dailyAt', '02:00');
 $scheduleTask('backup:clean', 'dailyAt', '03:00');
 $scheduleTask('order:cleanup-pending', 'hourly');
 $scheduleTask('session:cleanup', 'daily');
 $scheduleTask('log:rotate', 'weekly');
+
+// Reporting Tasks
 $scheduleTask('report:generate-daily', 'dailyAt', '06:00');
+
+// Cleanup Tasks
 $scheduleTask('notification:prune', 'weekly');
 $scheduleTask('audit:archive', 'monthly');

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\TwoFactorDisabled as TwoFactorDisabledEvent;
+use App\Events\TwoFactorEnabled as TwoFactorEnabledEvent;
 use App\Models\TwoFactorCode;
 use App\Models\TwoFactorSecret;
 use App\Notifications\TwoFactorDisabled;
@@ -28,7 +30,11 @@ class TwoFactorController extends Controller
             ['method' => 'email_otp', 'enabled_at' => now()]
         );
 
+        // Send notification
         $user->notify(new TwoFactorEnabled('email_otp'));
+
+        // Dispatch event for audit logging and additional processing
+        TwoFactorEnabledEvent::dispatch($user);
 
         return back()->with('success', 'Two-factor authentication enabled.');
     }
@@ -37,7 +43,12 @@ class TwoFactorController extends Controller
     {
         $user = $request->user();
         TwoFactorSecret::where('user_id', $user->id)->delete();
+        
+        // Send notification
         $user->notify(new TwoFactorDisabled);
+
+        // Dispatch event for audit logging
+        TwoFactorDisabledEvent::dispatch($user);
 
         return back()->with('success', 'Two-factor authentication disabled.');
     }

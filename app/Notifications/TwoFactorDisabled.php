@@ -12,7 +12,15 @@ class TwoFactorDisabled extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'database'];
+    }
+
+    public function toArray(object $notifiable): array
+    {
+        return [
+            'message' => 'Two-factor authentication disabled successfully!',
+            'type' => '2fa_disabled'
+        ];
     }
 
     public function toMail(object $notifiable): MailMessage

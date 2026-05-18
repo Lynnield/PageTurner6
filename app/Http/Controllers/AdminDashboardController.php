@@ -25,17 +25,19 @@ class AdminDashboardController extends Controller
 
         $recentOrders = Order::with('user')->latest()->limit(10)->get();
         $statusSummary = Order::selectRaw('status, COUNT(*) as count')->groupBy('status')->pluck('count', 'status');
-        $recentReviews = Review::with(['user', 'book'])->latest()->limit(10)->get();
+        $recentReviews = Review::with(['user', 'book.category'])->latest()->limit(10)->get();
 
         // Data Management Metrics
         $importStats = [
             'total' => ImportLog::count(),
+            'processing' => ImportLog::where('status', 'processing')->count(),
             'failed' => ImportLog::where('status', 'failed')->count(),
             'recent' => ImportLog::latest()->limit(5)->get(),
         ];
         
         $exportStats = [
             'total' => ExportLog::count(),
+            'processing' => ExportLog::where('status', 'processing')->count(),
             'recent' => ExportLog::latest()->limit(5)->get(),
         ];
 
@@ -48,12 +50,29 @@ class AdminDashboardController extends Controller
             'db_size' => $this->getDatabaseSize(),
             'failed_jobs' => DB::table('failed_jobs')->count(),
             'jobs_queue' => DB::table('jobs')->count(),
+            'backup_health' => $this->getBackupHealth(),
+            'notification_stats' => [
+                'unread' => DB::table('notifications')->whereNull('read_at')->count(),
+                'total' => DB::table('notifications')->count(),
+            ],
+            'api_usage' => [
+                'total_requests' => Audit::where('url', 'like', 'api/%')->count(),
+                'recent_429s' => Audit::where('event', 'rate_limit_exceeded')->where('created_at', '>', now()->subDay())->count(),
+            ]
         ];
 
         return view('admin.dashboard', compact(
             'metrics', 'recentOrders', 'statusSummary', 'recentReviews',
             'importStats', 'exportStats', 'auditStats', 'systemHealth'
         ));
+    }
+
+    private function getBackupHealth()
+    {
+        $lastBackup = DB::table('backup_monitoring')->latest()->first();
+        if (!$lastBackup) return 'Unknown';
+        
+        return $lastBackup->status === 'success' ? 'Healthy' : 'Failing';
     }
 
     private function getDatabaseSize()

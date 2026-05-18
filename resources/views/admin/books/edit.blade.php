@@ -61,11 +61,9 @@
 
                                 <div class="mb-4">
                                     <label for="cover_image" class="block text-gray-700 text-sm font-bold mb-2">Cover Image</label>
-                                    @if($book->cover_image)
-                                        <div class="mb-2">
-                                            <img src="{{ Storage::url($book->cover_image) }}" alt="Current Cover" class="h-20 w-auto rounded shadow-sm">
-                                        </div>
-                                    @endif
+                                    <div class="mb-2">
+                                        <img src="{{ $book->cover_image_url }}" alt="Current Cover" class="h-20 w-auto rounded shadow-sm" onerror="this.src='https://placehold.co/400x600?text=No+Cover'">
+                                    </div>
                                     <input type="file" name="cover_image" id="cover_image" class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md">
                                     @error('cover_image') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                                 </div>

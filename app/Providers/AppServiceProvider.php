@@ -2,23 +2,14 @@
 
 namespace App\Providers;
 
-use App\Events\OrderPlaced;
-use App\Events\OrderStatusChanged;
-use App\Events\ReviewSubmitted;
 use App\Models\User;
-use App\Notifications\NewOrderForAdmin;
-use App\Notifications\OrderPlacedNotification;
-use App\Notifications\OrderStatusChangedNotification;
-use App\Notifications\ReviewSubmittedNotification;
+use App\Models\Book;
+use App\Observers\BookObserver;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Auth\Events\Login;
-use Illuminate\Auth\Events\Failed;
-use Illuminate\Auth\Events\Logout;
-use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Database\Eloquent\Model;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -34,64 +25,11 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureRateLimiting();
 
-        Event::listen(OrderPlaced::class, function (OrderPlaced $event) {
-            $event->order->user->notify(new OrderPlacedNotification($event->order));
-            User::where('role', 'admin')->get()->each->notify(new NewOrderForAdmin($event->order));
-        });
+        // Part 5: Prevent lazy loading globally
+        Model::preventLazyLoading(! app()->isProduction());
 
-        Event::listen(OrderStatusChanged::class, function (OrderStatusChanged $event) {
-            $event->order->user->notify(new OrderStatusChangedNotification($event->order));
-        });
-
-        Event::listen(ReviewSubmitted::class, function (ReviewSubmitted $event) {
-            User::where('role', 'admin')->get()->each->notify(new ReviewSubmittedNotification($event->review));
-        });
-
-        $this->registerAuthAuditListeners();
-    }
-
-    protected function registerAuthAuditListeners(): void
-    {
-        Event::listen(Login::class, function (Login $event) {
-            $this->logCustomAudit($event->user, 'login', 'Logged in');
-        });
-
-        Event::listen(Logout::class, function (Logout $event) {
-            if ($event->user) {
-                $this->logCustomAudit($event->user, 'logout', 'Logged out');
-            }
-        });
-
-        Event::listen(Failed::class, function (Failed $event) {
-            if ($event->user) {
-                $this->logCustomAudit($event->user, 'failed_login', 'Failed login attempt');
-            }
-        });
-
-        Event::listen(PasswordReset::class, function (PasswordReset $event) {
-            $this->logCustomAudit($event->user, 'password_reset', 'Password reset');
-        });
-    }
-
-    protected function logCustomAudit(?User $user, string $event, string $message): void
-    {
-        if (! $user) return;
-
-        \App\Models\Audit::create([
-            'user_type'      => User::class,
-            'user_id'        => $user->id,
-            'event'          => $event,
-            'auditable_type' => User::class,
-            'auditable_id'   => $user->id,
-            'old_values'     => [],
-            'new_values'     => ['message' => $message],
-            'url'            => request()->fullUrl(),
-            'ip_address'     => request()->ip(),
-            'user_agent'     => request()->userAgent(),
-            'http_method'    => request()->method(),
-            'request_uuid'   => \Illuminate\Support\Str::uuid(),
-            'metadata'       => [],
-        ]);
+        // Part 10: Register Book Observer
+        Book::observe(BookObserver::class);
     }
 
     protected function configureRateLimiting(): void

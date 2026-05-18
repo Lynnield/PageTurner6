@@ -1,14 +1,8 @@
 @props(['book'])
 
 <div class="bg-white overflow-hidden shadow-sm sm:rounded-md h-full flex flex-col hover:shadow-md transition-shadow duration-300">
-    <a href="{{ route('books.show', $book) }}" class="block flex-shrink-0 relative aspect-[2/3] w-full overflow-hidden bg-gray-200">
-        @if($book->cover_image)
-            <img src="{{ Storage::url($book->cover_image) }}" alt="{{ $book->title }}" class="object-cover w-full h-full">
-        @else
-            <div class="flex items-center justify-center w-full h-full text-gray-400 bg-gray-100">
-                <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-            </div>
-        @endif
+    <a href="{{ route('books.show', $book) }}" class="block flex-shrink-0 relative aspect-[2/3] w-full overflow-hidden bg-indigo-50 flex items-center justify-center p-8">
+        <img src="{{ $book->cover_image_url }}" alt="{{ $book->title }}" class="object-contain w-full h-full max-h-full opacity-80" onerror="this.src='https://placehold.co/400x600?text=No+Cover'">
     </a>
     <div class="p-3 flex flex-col flex-1">
         <div class="mb-1">

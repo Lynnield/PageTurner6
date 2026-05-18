@@ -9,10 +9,8 @@ class IsbnRule implements ValidationRule
 {
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        if (! is_string($value)) {
-            $fail('The ISBN must be a string.');
-            return;
-        }
+        // Handle numeric values (e.g. from CSV/Excel) by casting to string
+        $value = (string) $value;
 
         $isbn = preg_replace('/[^0-9Xx]/', '', $value) ?? '';
 

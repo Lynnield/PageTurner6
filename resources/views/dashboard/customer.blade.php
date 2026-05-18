@@ -66,10 +66,15 @@
                 </h3>
                 <p class="text-sm text-gray-600 mb-4">{{ __('Download your personal data and account history in structured formats.') }}</p>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <a href="{{ route('customer.export.data') }}" class="flex flex-col items-center justify-center p-4 border rounded hover:bg-gray-50 transition">
+                    <div class="p-4 border rounded hover:bg-gray-50 transition flex flex-col items-center">
                         <span class="font-semibold text-gray-800">{{ __('Export My Data') }}</span>
-                        <span class="text-xs text-gray-500 mt-1">{{ __('Full profile, reviews, and activity (JSON)') }}</span>
-                    </a>
+                        <span class="text-xs text-gray-500 mt-1 mb-3 text-center">{{ __('Full profile, reviews, and activity') }}</span>
+                        <div class="flex gap-2">
+                            <a href="{{ route('customer.export.data', ['format' => 'json']) }}" class="text-xs px-2 py-1 bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200">JSON</a>
+                            <a href="{{ route('customer.export.data', ['format' => 'xlsx']) }}" class="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200">XLSX</a>
+                            <a href="{{ route('customer.export.data', ['format' => 'pdf']) }}" class="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200">PDF</a>
+                        </div>
+                    </div>
                     <a href="{{ route('customer.export.orders') }}" class="flex flex-col items-center justify-center p-4 border rounded hover:bg-gray-50 transition">
                         <span class="font-semibold text-gray-800">{{ __('Export Order History') }}</span>
                         <span class="text-xs text-gray-500 mt-1">{{ __('Detailed list of all purchases (Excel)') }}</span>

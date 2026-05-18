@@ -22,6 +22,17 @@
                         @endforeach
                     </select>
 
+                    <select name="sort" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" onchange="this.form.submit()">
+                        <option value="created_at" {{ request('sort') == 'created_at' ? 'selected' : '' }}>Newest</option>
+                        <option value="title" {{ request('sort') == 'title' ? 'selected' : '' }}>Title (A-Z)</option>
+                        <option value="price" {{ request('sort') == 'price' ? 'selected' : '' }}>Price</option>
+                    </select>
+
+                    <select name="direction" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" onchange="this.form.submit()">
+                        <option value="desc" {{ request('direction') == 'desc' ? 'selected' : '' }}>Desc</option>
+                        <option value="asc" {{ request('direction') == 'asc' ? 'selected' : '' }}>Asc</option>
+                    </select>
+
                     <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition">
                         Filter
                     </button>

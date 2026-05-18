@@ -32,6 +32,10 @@
                 <x-alert />
                 {{ $slot }}
             </main>
+
+            @if(Auth::check() && Auth::user()->isAdmin())
+                @include('partials.data-modals')
+            @endif
         </div>
     </body>
 </html>

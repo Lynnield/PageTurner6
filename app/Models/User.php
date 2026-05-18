@@ -23,6 +23,7 @@ class User extends Authenticatable implements MustVerifyEmail, Auditable
         'email',
         'password',
         'role',
+        'api_tier',
     ];
 
     public function isAdmin(): bool

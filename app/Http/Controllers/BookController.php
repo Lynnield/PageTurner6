@@ -11,32 +11,47 @@ class BookController extends Controller
 {
     public function index(Request $request)
     {
-        if ($request->routeIs('admin.*')) {
-            $books = Book::with('category')->latest()->paginate(10);
+        $query = Book::with(['category', 'reviews']);
 
-            return view('admin.books.index', compact('books'));
-        }
-
-        $query = Book::with('category');
-
+        // Search
         if ($request->filled('search')) {
-            $query->where('title', 'like', '%'.$request->search.'%')
-                ->orWhere('author', 'like', '%'.$request->search.'%');
+            $query->where(function ($q) use ($request) {
+                $q->where('title', 'like', '%'.$request->search.'%')
+                    ->orWhere('author', 'like', '%'.$request->search.'%')
+                    ->orWhere('isbn', 'like', '%'.$request->search.'%');
+            });
         }
 
+        // Category filter
         if ($request->filled('category')) {
             $query->where('category_id', $request->category);
         }
 
-        $books = $query->latest()->paginate(12);
-        $categories = Category::all();
+        // Sorting
+        $sortField = $request->get('sort', 'created_at');
+        $sortOrder = $request->get('direction', 'desc');
+
+        $allowedSorts = ['title', 'author', 'price', 'stock_quantity', 'created_at'];
+        if (in_array($sortField, $allowedSorts)) {
+            $query->orderBy($sortField, $sortOrder === 'asc' ? 'asc' : 'desc');
+        } else {
+            $query->latest();
+        }
+
+        if ($request->routeIs('admin.*')) {
+            $books = $query->paginate(10);
+            return view('admin.books.index', compact('books'));
+        }
+
+        $books = $query->paginate(12);
+        $categories = Category::select(['id', 'name'])->get();
 
         return view('books.index', compact('books', 'categories'));
     }
 
     public function create()
     {
-        $categories = Category::all();
+        $categories = Category::select(['id', 'name'])->get();
 
         return view('admin.books.create', compact('categories'));
     }
@@ -73,7 +88,7 @@ class BookController extends Controller
 
     public function edit(Book $book)
     {
-        $categories = Category::all();
+        $categories = Category::select(['id', 'name'])->get();
 
         return view('admin.books.edit', compact('book', 'categories'));
     }

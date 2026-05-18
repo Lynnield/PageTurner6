@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\OrderPlaced;
 use App\Models\Book;
 use App\Models\Order;
 use Illuminate\Http\Request;
@@ -17,7 +18,7 @@ class CheckoutController extends Controller
             return redirect()->route('cart.index')->with('warning', 'Your cart is empty.');
         }
 
-        $books = Book::whereIn('id', array_keys($cart))->get()->keyBy('id');
+        $books = Book::with('category')->whereIn('id', array_keys($cart))->get()->keyBy('id');
         $items = [];
         $total = 0;
         $adjusted = false;
@@ -122,6 +123,9 @@ class CheckoutController extends Controller
             });
 
             $request->session()->forget('cart');
+
+            // Dispatch event for notifications and audit logging
+            OrderPlaced::dispatch($order);
 
             return redirect()->route('orders.show', $order)->with('success', 'Order placed successfully!');
         } catch (\Throwable $e) {

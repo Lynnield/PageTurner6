@@ -18,16 +18,29 @@ class ImportService
      */
     public function queueBookImport(UploadedFile $file, string $mode, User $actor): ImportLog
     {
+        return $this->queueImport($file, 'books', $actor, new BookImport(0, $mode), $mode);
+    }
+
+    /**
+     * Queue an enterprise user import (CSV/XLSX).
+     */
+    public function queueUserImport(UploadedFile $file, User $actor): ImportLog
+    {
+        return $this->queueImport($file, 'users', $actor, new \App\Imports\UserImport(0));
+    }
+
+    private function queueImport(UploadedFile $file, string $type, User $actor, $importClass, string $mode = 'skip'): ImportLog
+    {
         $disk = 'local';
         $storedPath = $file->storeAs(
-            'imports/books/'.now()->format('Y/m/d'),
-            uniqid('books_', true).'_'.$file->getClientOriginalName(),
+            "imports/{$type}/".now()->format('Y/m/d'),
+            uniqid("{$type}_", true).'_'.$file->getClientOriginalName(),
             $disk
         );
 
         $log = ImportLog::create([
             'user_id' => $actor->id,
-            'import_type' => 'books',
+            'import_type' => $type,
             'original_filename' => $file->getClientOriginalName(),
             'file_disk' => $disk,
             'stored_path' => $storedPath,
@@ -35,14 +48,17 @@ class ImportService
             'status' => 'queued',
         ]);
 
+        // Inject log ID into import class if it supports it
+        if (property_exists($importClass, 'importLogId')) {
+            $reflection = new \ReflectionProperty($importClass, 'importLogId');
+            $reflection->setAccessible(true);
+            $reflection->setValue($importClass, $log->id);
+        }
+
         try {
-            Excel::queueImport(
-                new BookImport($log->id, $mode),
-                $storedPath,
-                $disk
-            );
+            Excel::queueImport($importClass, $storedPath, $disk);
         } catch (Throwable $e) {
-            Log::error('Failed to queue book import', [
+            Log::error("Failed to queue {$type} import", [
                 'import_log_id' => $log->id,
                 'error' => $e->getMessage(),
             ]);
@@ -52,8 +68,6 @@ class ImportService
                 'error_message' => $e->getMessage(),
                 'finished_at' => now(),
             ]);
-
-            // If queueing fails, keep the file for later debugging.
         }
 
         return $log;

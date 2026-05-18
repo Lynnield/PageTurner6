@@ -15,7 +15,18 @@ class NewOrderForAdmin extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'database'];
+    }
+
+    public function toArray(object $notifiable): array
+    {
+        return [
+            'message' => 'A new order #' . $this->order->id . ' has been placed.',
+            'order_id' => $this->order->id,
+            'customer' => $this->order->user->name,
+            'amount' => $this->order->total_amount,
+            'type' => 'new_order_admin'
+        ];
     }
 
     public function toMail(object $notifiable): MailMessage

@@ -39,7 +39,7 @@ class CategoryController extends Controller
 
     public function show(Category $category)
     {
-        $books = $category->books()->latest()->take(2)->get();
+        $books = $category->books()->with(['category', 'reviews'])->latest()->paginate(12);
 
         return view('categories.show', compact('category', 'books'));
     }

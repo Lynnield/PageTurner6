@@ -21,12 +21,12 @@ class OrderController extends Controller
         $user = Auth::user();
 
         if ($user->isAdmin()) {
-            $orders = Order::with(['user', 'items.book'])->latest()->paginate(10);
+            $orders = Order::with(['user', 'items.book.category'])->latest()->paginate(10);
 
             return view('admin.orders.index', compact('orders'));
         }
 
-        $orders = $user->orders()->with(['items.book'])->latest()->paginate(10);
+        $orders = $user->orders()->with(['items.book.category'])->latest()->paginate(10);
 
         return view('orders.index', compact('orders'));
     }
@@ -154,7 +154,9 @@ class OrderController extends Controller
 
         $old = $order->status;
         $order->update(['status' => $validated['status']]);
-        event(new OrderStatusChanged($order, $old, $order->status));
+        
+        // Dispatch event for notifications
+        OrderStatusChanged::dispatch($order);
 
         return back()->with('success', 'Order status updated successfully.');
     }

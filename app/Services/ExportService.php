@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Exports\BookExport;
+use App\Jobs\ProcessBookExportJob;
 use App\Models\ExportLog;
 use App\Models\User;
 use Illuminate\Support\Arr;
@@ -40,7 +41,7 @@ class ExportService
             'format' => $format,
             'filters' => $filters,
             'columns' => $columns,
-            'status' => $totalRows > 10000 ? 'queued' : 'processing',
+            'status' => 'queued',
             'total_rows' => $totalRows,
             'file_disk' => $disk,
             'started_at' => now(),
@@ -53,13 +54,15 @@ class ExportService
             $format === 'xlsx' ? 'xlsx' : ($format === 'csv' ? 'csv' : 'pdf')
         );
 
+        $log->update(['stored_path' => $filename]);
+
         if ($totalRows > 10000) {
-            // Heavy exports are always queued (store to disk), user retrieves later.
+            // Heavy exports are always queued, user retrieves later.
             try {
-                Excel::queue($export, $filename, $disk, $writerType);
-                $log->update(['stored_path' => $filename]);
+                // IMPORTANT: Use our custom job, NOT Excel::queue
+                ProcessBookExportJob::dispatch($log->id);
             } catch (Throwable $e) {
-                Log::error('Failed to queue book export', ['export_log_id' => $log->id, 'error' => $e->getMessage()]);
+                Log::error('Failed to dispatch book export job', ['export_log_id' => $log->id, 'error' => $e->getMessage()]);
                 $log->update(['status' => 'failed', 'error_message' => $e->getMessage(), 'finished_at' => now()]);
             }
 
@@ -72,6 +75,8 @@ class ExportService
             $response = Excel::download($export, basename($filename), $writerType);
             // Mark as completed even though it's a streamed response (client download).
             $log->update(['status' => 'completed', 'finished_at' => now()]);
+            
+            \App\Events\ExportCompleted::dispatch($log);
 
             return ['mode' => 'download', 'response' => $response, 'log' => $log];
         } catch (Throwable $e) {

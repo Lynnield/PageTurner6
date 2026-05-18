@@ -23,7 +23,7 @@ class CustomerDashboardController extends Controller
             ->pluck('book_id')
             ->unique()
             ->take(10);
-        $reviews = $user->reviews()->latest()->limit(10)->with('book')->get();
+        $reviews = $user->reviews()->latest()->limit(10)->with(['book.category'])->get();
 
         $emailVerified = ! is_null($user->email_verified_at);
         $twoFactorEnabled = TwoFactorSecret::where('user_id', $user->id)->whereNotNull('enabled_at')->exists();
@@ -40,14 +40,30 @@ class CustomerDashboardController extends Controller
         ));
     }
 
-    public function exportData()
+    public function exportData(Request $request)
     {
         $user = auth()->user();
+        $format = $request->get('format', 'json');
+
         $data = [
             'profile' => $user->only(['id', 'name', 'email', 'created_at', 'updated_at']),
             'orders' => $user->orders()->with('items.book')->get()->toArray(),
             'reviews' => $user->reviews()->with('book')->get()->toArray(),
         ];
+
+        if ($format === 'pdf') {
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('orders.personal_data_pdf', compact('user', 'data'));
+            return $pdf->download("personal_data_{$user->id}.pdf");
+        }
+
+        if ($format === 'xlsx') {
+            // Reusing BookExport or similar logic for Excel if needed, 
+            // but for GDPR usually JSON is preferred. For now let's support Excel via a simple download.
+            return \Maatwebsite\Excel\Facades\Excel::download(new class($data) implements \Maatwebsite\Excel\Concerns\FromCollection {
+                public function __construct(private array $data) {}
+                public function collection() { return collect($this->data['profile']); }
+            }, "personal_data_{$user->id}.xlsx");
+        }
 
         return Response::json($data, 200, [
             'Content-Disposition' => 'attachment; filename="personal_data.json"',

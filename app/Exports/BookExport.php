@@ -6,19 +6,18 @@ use App\Models\Book;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Maatwebsite\Excel\Concerns\FromQuery;
-use Maatwebsite\Excel\Concerns\ShouldQueue;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class BookExport implements FromQuery, WithHeadings, WithMapping, ShouldQueue
+class BookExport implements FromQuery, WithHeadings, WithMapping
 {
     /**
      * @param  array<string,mixed>  $filters
      * @param  list<string>  $columns
      */
     public function __construct(
-        private readonly array $filters,
-        private readonly array $columns
+        private array $filters,
+        private array $columns
     ) {}
 
     public function query(): Builder

@@ -15,7 +15,17 @@ class OrderPlacedNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'database'];
+    }
+
+    public function toArray(object $notifiable): array
+    {
+        return [
+            'message' => 'Order placed successfully! (Order #' . $this->order->id . ')',
+            'order_id' => $this->order->id,
+            'amount' => $this->order->total_amount,
+            'type' => 'order_placed'
+        ];
     }
 
     public function toMail(object $notifiable): MailMessage

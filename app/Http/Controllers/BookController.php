@@ -11,7 +11,7 @@ class BookController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Book::with(['category', 'reviews']);
+        $query = Book::with(['category'])->withAvg('reviews', 'rating');
 
         // Search
         if ($request->filled('search')) {

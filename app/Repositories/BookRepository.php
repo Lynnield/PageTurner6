@@ -43,7 +43,7 @@ class BookRepository
      */
     public function findByIsbn(string $isbn): ?Book
     {
-        return Cache::tags(['books', 'isbn'])->remember(
+        return Cache::remember(
             self::CACHE_PREFIX . "isbn:{$isbn}",
             self::TTL,
             fn () => Book::with('category')
@@ -58,7 +58,7 @@ class BookRepository
      */
     public function getBestsellers(int $limit = 10)
     {
-        return Cache::tags(['books', 'bestsellers'])->remember(
+        return Cache::remember(
             self::CACHE_PREFIX . "bestsellers:limit:{$limit}",
             self::TTL,
             fn () => Book::with('category')

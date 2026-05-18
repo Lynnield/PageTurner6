@@ -85,6 +85,7 @@ class BookExport implements FromQuery, WithHeadings, WithMapping
             'stock' => 'Stock',
             'category' => 'Category',
             'description' => 'Description',
+            'cover_image' => 'Cover Image',
             'created_at' => 'Created At',
             default => $col,
         };

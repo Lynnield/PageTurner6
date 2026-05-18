@@ -11,23 +11,38 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('books', function (Blueprint $table) {
-            // Composite Index: Category + Published + Status
-            $table->index(['category_id', 'published_at', 'is_active'], 'books_cat_pub_active_index');
-            
-            // Covering Index: Price + Stock + ID (for fast catalog/filtering)
-            $table->index(['price', 'stock_quantity', 'id'], 'books_price_stock_id_index');
-            
-            // ISBN Lookup Index (if not already indexed)
-            $table->index('isbn', 'books_isbn_index');
-            
-            // Active Status Index
-            $table->index('is_active', 'books_active_index');
+        // Composite Index: Category + Publication Year
+        if (!$this->indexExists('books', 'books_cat_year_index')) {
+            Schema::table('books', function (Blueprint $table) {
+                $table->index(['category_id', 'publication_year'], 'books_cat_year_index');
+            });
+        }
+        
+        // Covering Index: Price + Stock + ID
+        if (!$this->indexExists('books', 'books_price_stock_id_index')) {
+            Schema::table('books', function (Blueprint $table) {
+                $table->index(['price', 'stock_quantity', 'id'], 'books_price_stock_id_index');
+            });
+        }
+        
+        // ISBN Lookup Index (ISBN is unique, but secondary index can help in some cases, 
+        // though unique index already exists. Let's keep it if specifically requested by migration)
+        if (!$this->indexExists('books', 'books_isbn_index')) {
+            Schema::table('books', function (Blueprint $table) {
+                $table->index('isbn', 'books_isbn_index');
+            });
+        }
 
-            // Full-Text Index (Title + Description)
-            // Note: MySQL supports FULLTEXT on InnoDB tables
+        // Full-Text Index
+        if (!$this->indexExists('books', 'books_fulltext')) {
             DB::statement('ALTER TABLE books ADD FULLTEXT books_fulltext(title, description)');
-        });
+        }
+    }
+
+    private function indexExists(string $table, string $index): bool
+    {
+        $conn = Schema::getConnection()->getSchemaBuilder();
+        return collect(DB::select("SHOW INDEX FROM {$table} WHERE Key_name = '{$index}'"))->isNotEmpty();
     }
 
     /**
@@ -36,12 +51,18 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('books', function (Blueprint $table) {
-            $table->dropIndex('books_cat_pub_active_index');
-            $table->dropIndex('books_price_stock_id_index');
-            $table->dropIndex('books_isbn_index');
-            $table->dropIndex('books_active_index');
-            
-            $table->dropIndex('books_fulltext');
+            if ($this->indexExists('books', 'books_cat_year_index')) {
+                $table->dropIndex('books_cat_year_index');
+            }
+            if ($this->indexExists('books', 'books_price_stock_id_index')) {
+                $table->dropIndex('books_price_stock_id_index');
+            }
+            if ($this->indexExists('books', 'books_isbn_index')) {
+                $table->dropIndex('books_isbn_index');
+            }
+            if ($this->indexExists('books', 'books_fulltext')) {
+                $table->dropIndex('books_fulltext');
+            }
         });
     }
 };

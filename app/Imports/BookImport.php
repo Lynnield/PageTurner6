@@ -25,10 +25,11 @@ use Maatwebsite\Excel\Concerns\WithValidation;
 use Maatwebsite\Excel\Events\AfterImport;
 use Maatwebsite\Excel\Events\BeforeImport;
 use Maatwebsite\Excel\Events\ImportFailed;
+use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Validators\Failure;
 use Throwable;
 
-class BookImport implements ToCollection, WithHeadingRow, WithValidation, WithChunkReading, ShouldQueue, WithEvents, SkipsOnFailure, SkipsOnError, SkipsEmptyRows, WithBatchInserts
+class BookImport implements ToCollection, WithHeadingRow, WithValidation, WithChunkReading, ShouldQueue, WithEvents, SkipsOnFailure, SkipsOnError, SkipsEmptyRows, WithBatchInserts, WithMapping
 {
     /**
      * Enterprise note:
@@ -39,6 +40,20 @@ class BookImport implements ToCollection, WithHeadingRow, WithValidation, WithCh
         private int $importLogId,
         private readonly string $mode // skip|update
     ) {}
+
+    public function map($row): array
+    {
+        return [
+            'isbn' => (string) ($row['isbn'] ?? ''),
+            'title' => (string) ($row['title'] ?? ''),
+            'author' => (string) ($row['author'] ?? ''),
+            'price' => $row['price'] ?? null,
+            'stock' => $row['stock'] ?? null,
+            'category' => (string) ($row['category'] ?? ''),
+            'description' => (string) ($row['description'] ?? ''),
+            'cover_image' => (string) ($row['cover_image'] ?? ''),
+        ];
+    }
 
     public function chunkSize(): int
     {
@@ -57,12 +72,13 @@ class BookImport implements ToCollection, WithHeadingRow, WithValidation, WithCh
                 'required',
                 new IsbnRule(),
             ],
-            'title' => ['required', 'string', 'max:255'],
-            'author' => ['required', 'string', 'max:255'],
+            'title' => ['required', 'max:255'],
+            'author' => ['required', 'max:255'],
             'price' => ['required', 'numeric', 'gt:0', 'lte:9999.99'],
             'stock' => ['required', 'integer', 'min:0'],
-            'category' => ['required', 'string'],
-            'description' => ['nullable', 'string'],
+            'category' => ['required'],
+            'description' => ['nullable'],
+            'cover_image' => ['nullable'],
         ];
     }
 
@@ -76,6 +92,7 @@ class BookImport implements ToCollection, WithHeadingRow, WithValidation, WithCh
             'stock' => 'Stock',
             'category' => 'Category',
             'description' => 'Description',
+            'cover_image' => 'Cover Image',
         ];
     }
 
@@ -94,10 +111,20 @@ class BookImport implements ToCollection, WithHeadingRow, WithValidation, WithCh
 
         $payload = [];
         $isbns = [];
+        $isbnsInChunk = [];
 
         foreach ($rows as $row) {
             $isbn = preg_replace('/[^0-9Xx]/', '', (string) ($row['isbn'] ?? '')) ?? '';
             if ($isbn === '') {
+                continue;
+            }
+
+            // Deduplicate within the same chunk payload.
+            if (isset($isbnsInChunk[$isbn])) {
+                Log::warning('Duplicate ISBN found within the same import chunk', [
+                    'import_log_id' => $this->importLogId,
+                    'isbn' => $isbn,
+                ]);
                 continue;
             }
 
@@ -118,10 +145,12 @@ class BookImport implements ToCollection, WithHeadingRow, WithValidation, WithCh
                 'price' => (float) ($row['price'] ?? 0),
                 'stock_quantity' => (int) ($row['stock'] ?? 0),
                 'description' => $row['description'] ?? null,
+                'cover_image' => $row['cover_image'] ?? null,
                 'created_at' => $now,
                 'updated_at' => $now,
             ];
             $isbns[] = $isbn;
+            $isbnsInChunk[$isbn] = true;
         }
 
         if ($payload === []) {
@@ -133,7 +162,7 @@ class BookImport implements ToCollection, WithHeadingRow, WithValidation, WithCh
                 Book::upsert(
                     $payload,
                     ['isbn'],
-                    ['category_id', 'title', 'author', 'price', 'stock_quantity', 'description', 'updated_at']
+                    ['category_id', 'title', 'author', 'price', 'stock_quantity', 'description', 'cover_image', 'updated_at']
                 );
                 ImportLog::whereKey($this->importLogId)->update([
                     'processed_rows' => DB::raw('processed_rows + '.count($payload)),

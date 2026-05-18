@@ -48,12 +48,21 @@ class ImportExportController extends Controller
             'Expires'             => '0'
         ];
 
-        $columns = ['isbn', 'title', 'author', 'price', 'stock', 'category', 'description'];
+        $columns = ['isbn', 'title', 'author', 'price', 'stock', 'category', 'description', 'cover_image'];
 
         $callback = function () use ($columns) {
             $file = fopen('php://output', 'w');
             fputcsv($file, $columns);
-            fputcsv($file, ['9780743273565', 'The Great Gatsby', 'F. Scott Fitzgerald', '15.99', '100', 'Fiction', 'A classic novel.']);
+            fputcsv($file, [
+                '9780743273565', 
+                'The Great Gatsby', 
+                'F. Scott Fitzgerald', 
+                '15.99', 
+                '100', 
+                'Fiction', 
+                'A classic novel.',
+                'https://covers.openlibrary.org/b/isbn/9780743273565-L.jpg'
+            ]);
             fclose($file);
         };
 

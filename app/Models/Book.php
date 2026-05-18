@@ -70,12 +70,23 @@ class Book extends Model implements Auditable
 
     public function getAverageRatingAttribute()
     {
+        if (isset($this->reviews_avg_rating)) {
+            return (float) $this->reviews_avg_rating;
+        }
+        
+        if ($this->relationLoaded('reviews')) {
+            return $this->reviews->avg('rating') ?: 0;
+        }
+
         return $this->reviews()->avg('rating') ?: 0;
     }
 
     public function getCoverImageUrlAttribute()
     {
         if ($this->cover_image) {
+            if (filter_var($this->cover_image, FILTER_VALIDATE_URL)) {
+                return $this->cover_image;
+            }
             return \Illuminate\Support\Facades\Storage::url($this->cover_image);
         }
 

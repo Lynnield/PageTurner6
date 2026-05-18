@@ -15,7 +15,7 @@ class BookCacheService
      */
     public function getCategories()
     {
-        return Cache::tags(['categories'])->remember('all_categories', self::TTL, function () {
+        return Cache::remember('categories:all', self::TTL, function () {
             return Category::select(['id', 'name', 'description'])->get();
         });
     }
@@ -28,7 +28,7 @@ class BookCacheService
         $this->getCategories();
         
         // Warm up bestsellers
-        Cache::tags(['books', 'bestsellers'])->forget('books:bestsellers:limit:10');
+        Cache::forget('books:bestsellers:limit:10');
         
         Book::select(['id', 'title', 'author', 'price', 'isbn', 'cover_image', 'is_bestseller'])
             ->where('is_active', true)
@@ -42,8 +42,12 @@ class BookCacheService
      */
     public function invalidateBook(Book $book)
     {
-        Cache::tags(['books'])->flush();
-        Cache::tags(['isbn'])->forget("books:isbn:{$book->isbn}");
+        // Without tags, we use specific keys or flush all if necessary
+        // For individual book by ISBN
+        Cache::forget("books:isbn:{$book->isbn}");
+        
+        // Bestsellers and other general lists might need full clearing or specific keys
+        Cache::forget('books:bestsellers:limit:10');
     }
 
     /**
@@ -51,6 +55,6 @@ class BookCacheService
      */
     public function invalidateCategories()
     {
-        Cache::tags(['categories'])->flush();
+        Cache::forget('categories:all');
     }
 }

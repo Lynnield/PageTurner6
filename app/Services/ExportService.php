@@ -104,7 +104,7 @@ class ExportService
      */
     public function normalizeBookColumns(array $requested): array
     {
-        $allowed = ['id', 'isbn', 'title', 'author', 'price', 'stock', 'category', 'description', 'created_at'];
+        $allowed = ['id', 'isbn', 'title', 'author', 'price', 'stock', 'category', 'description', 'cover_image', 'created_at'];
         $requested = array_values(array_filter(array_map('trim', $requested)));
 
         $cols = array_values(array_intersect($requested, $allowed));
